@@ -146,14 +146,14 @@
     }
 
     .chart-section {
-      max-width: 1300px;
+      max-width: 1080px;
       margin: 0 auto;
       padding: 0 1rem 3rem;
     }
     .chart-section iframe {
       display: block;
       width: 100%;
-      height: 540px;
+      height: 800px;
       border: 1px solid #1e1e2a;
       border-radius: 16px;
       background: #0d0d15;
@@ -202,7 +202,7 @@
     }
     @media (max-width: 640px) {
       .hero h1 { font-size: 2.5rem; }
-      .chart-section iframe { height: 360px; }
+      .chart-section iframe { height: 550px; }
     }
   </style>
 </head>
@@ -298,26 +298,29 @@
       }
     }
 
-    async function fetchDex() {
+    const SUPPLY = 1000000000;
+
+    async function fetchMcap() {
       try {
-        const r = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CA);
+        const r = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CA + '?_=' + Date.now());
         const d = await r.json();
-        const pair = d.pairs && d.pairs.find(p => p.dexId === 'pumpfun');
-        if (!pair) return;
-
-        document.getElementById('mcapBar').textContent = fmtUsd(parseFloat(pair.fdv));
-
+        console.log('dex raw:', d);
+        if (!d.pairs || !d.pairs.length) return;
+        const pair = d.pairs.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
+        console.log('pair:', pair);
+        const mcap = pair.marketCap || (pair.priceUsd ? parseFloat(pair.priceUsd) * SUPPLY : null) || pair.fdv;
+        if (mcap && !isNaN(mcap)) document.getElementById('mcapBar').textContent = fmtUsd(mcap);
         if (!launchTime && pair.pairCreatedAt) {
           launchTime = pair.pairCreatedAt;
           updateTime();
         }
       } catch (e) {
-        console.error('fetchDex error', e);
+        console.error('fetchMcap error', e);
       }
     }
 
-    fetchDex();
-    setInterval(fetchDex, 15000);
+    fetchMcap();
+    setInterval(fetchMcap, 15000);
     setInterval(updateTime, 1000);
   </script>
 </body>
