@@ -251,7 +251,7 @@
     <div class="trade-ticker">
       <span class="label">Live Trades</span>
       <span class="trade" id="netLabel" style="font-weight:700;margin-right:0.25rem"></span>
-      <span class="trades" id="tradeTicker"><span class="trade">waiting...</span></span>
+      <span class="trades" id="tradeTicker"></span>
     </div>
   </section>
 
@@ -306,24 +306,6 @@
       el.className = 'stat-value ' + clsName;
     }
 
-    let tradesBuf = [];
-
-    function pushTrades(trades) {
-      for (const t of trades) {
-        const side = t.side === 'buy' ? 'buy' : 'sell';
-        const usd = parseFloat(t.volumeUsd || t.amountUsd || 0);
-        tradesBuf.push({
-          side: side,
-          label: (side === 'buy' ? 'B' : 'S') + ' $' + (usd < 1 ? usd.toFixed(2) : Math.round(usd).toLocaleString())
-        });
-      }
-      if (tradesBuf.length > 50) tradesBuf = tradesBuf.slice(-50);
-      const el = document.getElementById('tradeTicker');
-      el.innerHTML = tradesBuf.slice(-20).map(t =>
-        '<span class="trade ' + t.side + '">' + t.label + '</span>'
-      ).join('');
-    }
-
     async function fetchDex() {
       try {
         const r = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CA);
@@ -350,27 +332,17 @@
         }
 
         const nl = document.getElementById('netLabel');
-        if (net !== 0) {
-          nl.textContent = (net >= 0 ? '+' : '') + net + ' net 5m';
-          nl.className = 'trade ' + (net >= 0 ? 'buy' : 'sell');
-        } else {
-          nl.textContent = '';
-        }
+        nl.textContent = (net >= 0 ? '+' : '') + net + ' net 5m';
+        nl.className = 'trade ' + (net >= 0 ? 'buy' : 'sell');
+        nl.style.display = net === 0 && buys === 0 && sells === 0 ? 'none' : '';
 
-        if (pair.pairAddress) {
-          fetchTrades(pair.pairAddress);
+        const ticker = document.getElementById('tradeTicker');
+        if (buys > 0 || sells > 0) {
+          ticker.innerHTML = '<span class="trade buy">B ' + buys + '</span><span class="trade sell">S ' + sells + '</span>';
         }
       } catch (e) {
         console.error('fetchDex error', e);
       }
-    }
-
-    async function fetchTrades(pairAddr) {
-      try {
-        const r = await fetch('https://api.dexscreener.com/trades/v1/solana/' + pairAddr);
-        const trades = await r.json();
-        if (Array.isArray(trades) && trades.length) pushTrades(trades);
-      } catch (e) {}
     }
 
     async function fetchHolders() {
