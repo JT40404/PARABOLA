@@ -126,41 +126,6 @@
     .stat-value.up { color: #22c55e; }
     .stat-value.down { color: #ef4444; }
     .stat-value.neutral { color: #94a3b8; }
-    .trade-ticker {
-      grid-column: 1 / -1;
-      background: rgba(18, 18, 26, 0.8);
-      border: 1px solid #1e1e2a;
-      border-radius: 12px;
-      padding: 0.6rem 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      overflow: hidden;
-      backdrop-filter: blur(8px);
-      font-size: 0.85rem;
-    }
-    .trade-ticker .label {
-      color: #64748b;
-      text-transform: uppercase;
-      font-size: 0.7rem;
-      letter-spacing: 0.06em;
-      white-space: nowrap;
-    }
-    .trade-ticker .trades {
-      display: flex;
-      gap: 0.5rem;
-      overflow: hidden;
-      flex: 1;
-    }
-    .trade {
-      white-space: nowrap;
-      padding: 0.15rem 0.4rem;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-    .trade.buy { color: #22c55e; background: rgba(34, 197, 94, 0.1); }
-    .trade.sell { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
     @media (max-width: 640px) {
       .stats { grid-template-columns: repeat(2, 1fr); }
     }
@@ -248,11 +213,6 @@
       <div class="stat-label">Price 5m</div>
       <div class="stat-value neutral" id="price">---</div>
     </div>
-    <div class="trade-ticker">
-      <span class="label">Live Trades</span>
-      <span class="trade" id="netLabel" style="font-weight:700;margin-right:0.25rem"></span>
-      <span class="trades" id="tradeTicker"></span>
-    </div>
   </section>
 
   <section class="hero">
@@ -313,32 +273,16 @@
         const pair = d.pairs && d.pairs.find(p => p.dexId === 'pumpfun');
         if (!pair) return;
 
-        const mcap = parseFloat(pair.fdv);
-        const vol5 = pair.volume && parseFloat(pair.volume.m5);
-        const price = parseFloat(pair.priceUsd);
-        const pc = pair.priceChange && parseFloat(pair.priceChange.m5);
-        const buys = (pair.txns && pair.txns.m5 && pair.txns.m5.buys) || 0;
-        const sells = (pair.txns && pair.txns.m5 && pair.txns.m5.sells) || 0;
-        const net = buys - sells;
-
-        document.getElementById('mcap').textContent = fmtUsd(mcap);
-        document.getElementById('vol5m').textContent = fmtUsd(vol5);
+        document.getElementById('mcap').textContent = fmtUsd(parseFloat(pair.fdv));
+        document.getElementById('vol5m').textContent = fmtUsd(pair.volume && parseFloat(pair.volume.m5));
 
         const priceEl = document.getElementById('price');
-        if (price != null && !isNaN(price)) {
-          const change = (pc != null && !isNaN(pc)) ? ' (' + (pc >= 0 ? '+' : '') + pc.toFixed(2) + '%)' : '';
+        const price = parseFloat(pair.priceUsd);
+        const pc = pair.priceChange && parseFloat(pair.priceChange.m5);
+        if (!isNaN(price)) {
+          const change = (!isNaN(pc)) ? ' (' + (pc >= 0 ? '+' : '') + pc.toFixed(2) + '%)' : '';
           priceEl.textContent = '$' + fmt(price) + change;
           setCls(priceEl, pc >= 0 ? 'up' : pc < 0 ? 'down' : 'neutral');
-        }
-
-        const nl = document.getElementById('netLabel');
-        nl.textContent = (net >= 0 ? '+' : '') + net + ' net 5m';
-        nl.className = 'trade ' + (net >= 0 ? 'buy' : 'sell');
-        nl.style.display = net === 0 && buys === 0 && sells === 0 ? 'none' : '';
-
-        const ticker = document.getElementById('tradeTicker');
-        if (buys > 0 || sells > 0) {
-          ticker.innerHTML = '<span class="trade buy">B ' + buys + '</span><span class="trade sell">S ' + sells + '</span>';
         }
       } catch (e) {
         console.error('fetchDex error', e);
@@ -347,20 +291,26 @@
 
     async function fetchHolders() {
       try {
-        const r = await fetch('https://public-api.birdeye.so/public/token_holder?address=' + CA);
+        const r = await fetch('https://rpc.ankr.com/solana', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0', id: 1,
+            method: 'getTokenAccountsByMint',
+            params: [
+              CA,
+              { programId: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' },
+              { encoding: 'base64', limit: 1000 }
+            ]
+          })
+        });
         const d = await r.json();
-        if (d && d.data && d.data.holder != null) {
-          document.getElementById('holders').textContent = Number(d.data.holder).toLocaleString();
-          return;
+        if (d && d.result && d.result.value) {
+          document.getElementById('holders').textContent = d.result.value.length.toLocaleString();
         }
-      } catch (e) {}
-      try {
-        const r2 = await fetch('https://api.solscan.io/token/holders?token=' + CA + '&limit=1');
-        const d2 = await r2.json();
-        if (d2 && d2.total != null) {
-          document.getElementById('holders').textContent = Number(d2.total).toLocaleString();
-        }
-      } catch (e2) {}
+      } catch (e) {
+        console.error('holders fetch error', e);
+      }
     }
 
     fetchDex();
