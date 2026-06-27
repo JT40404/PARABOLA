@@ -23,7 +23,7 @@
       z-index: 0;
       pointer-events: none;
     }
-    .banner, .hero, .ca-section, .chart-section, .links-section, footer {
+    .banner, .hero, .ca-section, .stats, .chart-section, .links-section, footer {
       position: relative;
       z-index: 1;
     }
@@ -95,6 +95,76 @@
       word-break: break-all;
       max-width: 100%;
     }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      max-width: 900px;
+      margin: 1.5rem auto 0;
+      padding: 0 2rem;
+    }
+    .stat-card {
+      background: rgba(18, 18, 26, 0.8);
+      border: 1px solid #1e1e2a;
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+      backdrop-filter: blur(8px);
+    }
+    .stat-label {
+      font-size: 0.7rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.35rem;
+    }
+    .stat-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-value.up { color: #22c55e; }
+    .stat-value.down { color: #ef4444; }
+    .stat-value.neutral { color: #94a3b8; }
+    .trade-ticker {
+      grid-column: 1 / -1;
+      background: rgba(18, 18, 26, 0.8);
+      border: 1px solid #1e1e2a;
+      border-radius: 12px;
+      padding: 0.6rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+      font-size: 0.85rem;
+    }
+    .trade-ticker .label {
+      color: #64748b;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+    .trade-ticker .trades {
+      display: flex;
+      gap: 0.5rem;
+      overflow: hidden;
+      flex: 1;
+    }
+    .trade {
+      white-space: nowrap;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .trade.buy { color: #22c55e; background: rgba(34, 197, 94, 0.1); }
+    .trade.sell { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+    @media (max-width: 640px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+    }
+
     .chart-section {
       width: 100%;
       padding: 0 0 3rem;
@@ -161,6 +231,30 @@
     </a>
   </section>
 
+  <section class="stats" id="stats">
+    <div class="stat-card">
+      <div class="stat-label">Market Cap</div>
+      <div class="stat-value neutral" id="mcap">---</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">5m Volume</div>
+      <div class="stat-value neutral" id="vol5m">---</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Holders</div>
+      <div class="stat-value neutral" id="holders">---</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Price 5m</div>
+      <div class="stat-value neutral" id="price">---</div>
+    </div>
+    <div class="trade-ticker">
+      <span class="label">Live Trades</span>
+      <span class="trade" id="netLabel" style="font-weight:700;margin-right:0.25rem"></span>
+      <span class="trades" id="tradeTicker"><span class="trade">waiting...</span></span>
+    </div>
+  </section>
+
   <section class="hero">
     <h1>PARABOLA</h1>
     <p>A next-generation platform built for speed, scale, and simplicity. Welcome to the future.</p>
@@ -189,5 +283,118 @@
   <footer>
     &copy; 2026 PARABOLA. All rights reserved.
   </footer>
+
+  <script>
+    const CA = 'BXFPRH78negdDuPiC7voGZun6cm4vQfjGxBD3GzApump';
+
+    function fmt(n) {
+      if (n == null || isNaN(n)) return '---';
+      if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+      if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+      if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+      if (n < 0.00001) return n.toExponential(2);
+      if (n < 1) return n.toFixed(6);
+      return n.toFixed(2);
+    }
+
+    function fmtUsd(n) {
+      if (n == null || isNaN(n)) return '---';
+      return '$' + fmt(n);
+    }
+
+    function setCls(el, clsName) {
+      el.className = 'stat-value ' + clsName;
+    }
+
+    let tradesBuf = [];
+
+    function pushTrades(trades) {
+      for (const t of trades) {
+        const side = t.side === 'buy' ? 'buy' : 'sell';
+        const usd = parseFloat(t.volumeUsd || t.amountUsd || 0);
+        tradesBuf.push({
+          side: side,
+          label: (side === 'buy' ? 'B' : 'S') + ' $' + (usd < 1 ? usd.toFixed(2) : Math.round(usd).toLocaleString())
+        });
+      }
+      if (tradesBuf.length > 50) tradesBuf = tradesBuf.slice(-50);
+      const el = document.getElementById('tradeTicker');
+      el.innerHTML = tradesBuf.slice(-20).map(t =>
+        '<span class="trade ' + t.side + '">' + t.label + '</span>'
+      ).join('');
+    }
+
+    async function fetchDex() {
+      try {
+        const r = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CA);
+        const d = await r.json();
+        const pair = d.pairs && d.pairs.find(p => p.dexId === 'pumpfun');
+        if (!pair) return;
+
+        const mcap = parseFloat(pair.fdv);
+        const vol5 = pair.volume && parseFloat(pair.volume.m5);
+        const price = parseFloat(pair.priceUsd);
+        const pc = pair.priceChange && parseFloat(pair.priceChange.m5);
+        const buys = (pair.txns && pair.txns.m5 && pair.txns.m5.buys) || 0;
+        const sells = (pair.txns && pair.txns.m5 && pair.txns.m5.sells) || 0;
+        const net = buys - sells;
+
+        document.getElementById('mcap').textContent = fmtUsd(mcap);
+        document.getElementById('vol5m').textContent = fmtUsd(vol5);
+
+        const priceEl = document.getElementById('price');
+        if (price != null && !isNaN(price)) {
+          const change = (pc != null && !isNaN(pc)) ? ' (' + (pc >= 0 ? '+' : '') + pc.toFixed(2) + '%)' : '';
+          priceEl.textContent = '$' + fmt(price) + change;
+          setCls(priceEl, pc >= 0 ? 'up' : pc < 0 ? 'down' : 'neutral');
+        }
+
+        const nl = document.getElementById('netLabel');
+        if (net !== 0) {
+          nl.textContent = (net >= 0 ? '+' : '') + net + ' net 5m';
+          nl.className = 'trade ' + (net >= 0 ? 'buy' : 'sell');
+        } else {
+          nl.textContent = '';
+        }
+
+        if (pair.pairAddress) {
+          fetchTrades(pair.pairAddress);
+        }
+      } catch (e) {
+        console.error('fetchDex error', e);
+      }
+    }
+
+    async function fetchTrades(pairAddr) {
+      try {
+        const r = await fetch('https://api.dexscreener.com/trades/v1/solana/' + pairAddr);
+        const trades = await r.json();
+        if (Array.isArray(trades) && trades.length) pushTrades(trades);
+      } catch (e) {}
+    }
+
+    async function fetchHolders() {
+      try {
+        const r = await fetch('https://public-api.birdeye.so/public/token_holder?address=' + CA);
+        const d = await r.json();
+        if (d && d.data && d.data.holder != null) {
+          document.getElementById('holders').textContent = Number(d.data.holder).toLocaleString();
+          return;
+        }
+      } catch (e) {}
+      try {
+        const r2 = await fetch('https://api.solscan.io/token/holders?token=' + CA + '&limit=1');
+        const d2 = await r2.json();
+        if (d2 && d2.total != null) {
+          document.getElementById('holders').textContent = Number(d2.total).toLocaleString();
+        }
+      } catch (e2) {}
+    }
+
+    fetchDex();
+    fetchHolders();
+    setInterval(fetchDex, 15000);
+    setInterval(fetchHolders, 60000);
+  </script>
 </body>
 </html>
