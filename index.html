@@ -23,6 +23,15 @@
       align-items: center;
       padding: 2rem 1rem 0;
     }
+    .banner a {
+      display: block;
+      line-height: 0;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .banner a:hover {
+      transform: scale(1.02);
+      opacity: 0.95;
+    }
     .banner img {
       max-width: 100%;
       height: auto;
@@ -31,7 +40,7 @@
     }
     .hero {
       text-align: center;
-      padding: 4rem 2rem 3rem;
+      padding: 4rem 2rem 2rem;
     }
     .hero h1 {
       font-size: 4rem;
@@ -51,54 +60,74 @@
       margin-right: auto;
       line-height: 1.7;
     }
-    .cta {
-      margin-top: 2.5rem;
-      display: inline-block;
-      padding: 0.875rem 2.5rem;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #7c3aed, #6366f1);
-      color: #fff;
-      font-weight: 700;
-      font-size: 1rem;
-      text-decoration: none;
-      transition: transform 0.2s, box-shadow 0.2s;
+    .ca-section {
+      text-align: center;
+      padding: 0 2rem 2rem;
     }
-    .cta:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(99, 102, 241, 0.35);
-    }
-    .features {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 2rem;
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 2rem 2rem 4rem;
-    }
-    .feature-card {
-      background: #12121a;
-      border: 1px solid #1e1e2a;
-      border-radius: 16px;
-      padding: 2rem;
-      transition: border-color 0.2s, transform 0.2s;
-    }
-    .feature-card:hover {
-      border-color: #6366f1;
-      transform: translateY(-4px);
-    }
-    .feature-card .icon {
-      font-size: 2rem;
-      margin-bottom: 1rem;
-    }
-    .feature-card h3 {
-      font-size: 1.25rem;
-      font-weight: 700;
+    .ca-label {
+      font-size: 0.8rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
       margin-bottom: 0.5rem;
     }
-    .feature-card p {
-      color: #94a3b8;
-      line-height: 1.6;
+    .ca-address {
+      display: inline-block;
+      background: #12121a;
+      border: 1px solid #1e1e2a;
+      border-radius: 10px;
+      padding: 0.75rem 1.5rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      color: #a78bfa;
+      word-break: break-all;
+      max-width: 100%;
+    }
+    .chart-section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 1rem 3rem;
+    }
+    .chart-section iframe {
+      width: 100%;
+      height: 480px;
+      border: 1px solid #1e1e2a;
+      border-radius: 16px;
+      background: #0d0d15;
+    }
+    .links-section {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 2rem 4rem;
+    }
+    .link-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.875rem 2rem;
+      border-radius: 12px;
+      background: #12121a;
+      border: 1px solid #1e1e2a;
+      color: #fff;
+      font-weight: 600;
       font-size: 0.95rem;
+      text-decoration: none;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .link-btn:hover {
+      border-color: #6366f1;
+      transform: translateY(-2px);
+    }
+    .link-btn.share {
+      background: linear-gradient(135deg, #7c3aed, #6366f1);
+      border: none;
+    }
+    .link-btn.share:hover {
+      box-shadow: 0 8px 30px rgba(99, 102, 241, 0.35);
     }
     footer {
       margin-top: auto;
@@ -110,36 +139,40 @@
     }
     @media (max-width: 640px) {
       .hero h1 { font-size: 2.5rem; }
+      .chart-section iframe { height: 360px; }
     }
   </style>
 </head>
 <body>
   <section class="banner">
-    <img src="https://i.ibb.co/PZpZdzNH/parabolatokenbanner.gif" alt="PARABOLA Banner">
+    <a href="https://pump.fun/coin/BXFPRH78negdDuPiC7voGZun6cm4vQfjGxBD3GzApump" target="_blank" rel="noopener">
+      <img src="https://i.ibb.co/PZpZdzNH/parabolatokenbanner.gif" alt="PARABOLA Banner">
+    </a>
   </section>
 
   <section class="hero">
     <h1>PARABOLA</h1>
     <p>A next-generation platform built for speed, scale, and simplicity. Welcome to the future.</p>
-    <a href="#" class="cta">Get Started</a>
   </section>
 
-  <section class="features">
-    <div class="feature-card">
-      <div class="icon">⚡</div>
-      <h3>Blazing Fast</h3>
-      <p>Optimized for performance with minimal latency and maximum throughput.</p>
-    </div>
-    <div class="feature-card">
-      <div class="icon">🔒</div>
-      <h3>Secure by Default</h3>
-      <p>Enterprise-grade security built into every layer of the platform.</p>
-    </div>
-    <div class="feature-card">
-      <div class="icon">🌐</div>
-      <h3>Globally Distributed</h3>
-      <p>Deployed across regions for reliable access anywhere in the world.</p>
-    </div>
+  <section class="ca-section">
+    <div class="ca-label">Contract Address</div>
+    <div class="ca-address">BXFPRH78negdDuPiC7voGZun6cm4vQfjGxBD3GzApump</div>
+  </section>
+
+  <section class="chart-section">
+    <iframe src="https://dexscreener.com/solana/BXFPRH78negdDuPiC7voGZun6cm4vQfjGxBD3GzApump?embed=1&theme=dark" title="DexScreener Chart"></iframe>
+  </section>
+
+  <section class="links-section">
+    <a href="https://x.com/i/communities/2038020673076093328" target="_blank" rel="noopener" class="link-btn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      X Community
+    </a>
+    <a href="https://x.com/intent/post?text=Check%20out%20the%20PARABOLA%20community%20on%20X!%20Join%20us%20here%3A%20https%3A%2F%2Fx.com%2Fi%2Fcommunities%2F2038020673076093328" target="_blank" rel="noopener" class="link-btn share">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      Share on X
+    </a>
   </section>
 
   <footer>
