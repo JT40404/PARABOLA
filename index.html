@@ -9,11 +9,23 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Inter', -apple-system, sans-serif;
-      background: #0a0a0f;
+      background: #0a0a0f url('https://i.ibb.co/F4ZWzqyP/mooon.webp') center / cover no-repeat fixed;
       color: #fff;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 10, 15, 0.65);
+      z-index: 0;
+      pointer-events: none;
+    }
+    .banner, .hero, .ca-section, .chart-section, .links-section, footer {
+      position: relative;
+      z-index: 1;
     }
     .banner {
       width: 100%;
