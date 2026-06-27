@@ -23,7 +23,7 @@
       z-index: 0;
       pointer-events: none;
     }
-    .banner, .hero, .ca-section, .stats, .chart-section, .links-section, footer {
+    .banner, .hero, .ca-section, .chart-section, .links-section, footer {
       position: relative;
       z-index: 1;
     }
@@ -31,9 +31,29 @@
       width: 100%;
       background: #0a0a0f;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
       padding: 2rem 1rem 0;
+    }
+    .banner-bar {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 0 1rem;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+    .banner-bar .bar-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .banner-bar .bar-item .val {
+      color: #22c55e;
+      font-weight: 700;
     }
     .banner a {
       display: block;
@@ -122,39 +142,9 @@
     .ca-address .tooltip.show {
       opacity: 1;
     }
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1rem;
-      max-width: 900px;
-      margin: 1.5rem auto 0;
-      padding: 0 2rem;
-    }
-    .stat-card {
-      background: rgba(18, 18, 26, 0.8);
-      border: 1px solid #1e1e2a;
-      border-radius: 12px;
-      padding: 1rem;
-      text-align: center;
-      backdrop-filter: blur(8px);
-    }
-    .stat-label {
-      font-size: 0.7rem;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 0.35rem;
-    }
-    .stat-value {
-      font-size: 1.1rem;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
-    .stat-value.up { color: #22c55e; }
-    .stat-value.down { color: #ef4444; }
-    .stat-value.neutral { color: #94a3b8; }
+
     @media (max-width: 640px) {
-      .stats { grid-template-columns: repeat(2, 1fr); }
+      .banner-bar { flex-direction: column; gap: 0.4rem; }
     }
 
     .chart-section {
@@ -220,28 +210,13 @@
 </head>
 <body>
   <section class="banner">
+    <div class="banner-bar">
+      <span class="bar-item">Market Cap: <span class="val" id="mcapBar">---</span></span>
+      <span class="bar-item">Time Since Launch: <span class="val" id="timeBar">---</span></span>
+    </div>
     <a href="https://pump.fun/coin/BXFPRH78negdDuPiC7voGZun6cm4vQfjGxBD3GzApump" target="_blank" rel="noopener">
       <img src="https://i.ibb.co/PZpZdzNH/parabolatokenbanner.gif" alt="PARABOLA Banner">
     </a>
-  </section>
-
-  <section class="stats" id="stats">
-    <div class="stat-card">
-      <div class="stat-label">Market Cap</div>
-      <div class="stat-value neutral" id="mcap">---</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">5m Volume</div>
-      <div class="stat-value neutral" id="vol5m">---</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Holders</div>
-      <div class="stat-value neutral" id="holders">---</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Price 5m</div>
-      <div class="stat-value neutral" id="price">---</div>
-    </div>
   </section>
 
   <section class="hero">
@@ -286,6 +261,8 @@
       setTimeout(() => t.classList.remove('show'), 1200);
     }
 
+    let launchTime = null;
+
     function fmt(n) {
       if (n == null || isNaN(n)) return '---';
       if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
@@ -301,8 +278,26 @@
       return '$' + fmt(n);
     }
 
-    function setCls(el, clsName) {
-      el.className = 'stat-value ' + clsName;
+    function fmtTime(ms) {
+      if (ms <= 0) return '---';
+      const s = Math.floor(ms / 1000);
+      const d = Math.floor(s / 86400);
+      const h = Math.floor((s % 86400) / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const sec = s % 60;
+      let parts = [];
+      if (d) parts.push(d + 'd');
+      if (h) parts.push(h + 'h');
+      if (m) parts.push(m + 'm');
+      if (sec !== undefined && !d) parts.push(sec + 's');
+      return parts.join(' ') || '0s';
+    }
+
+    function updateTime() {
+      if (launchTime) {
+        const elapsed = Date.now() - launchTime;
+        document.getElementById('timeBar').textContent = fmtTime(elapsed);
+      }
     }
 
     async function fetchDex() {
@@ -312,50 +307,20 @@
         const pair = d.pairs && d.pairs.find(p => p.dexId === 'pumpfun');
         if (!pair) return;
 
-        document.getElementById('mcap').textContent = fmtUsd(parseFloat(pair.fdv));
-        document.getElementById('vol5m').textContent = fmtUsd(pair.volume && parseFloat(pair.volume.m5));
+        document.getElementById('mcapBar').textContent = fmtUsd(parseFloat(pair.fdv));
 
-        const priceEl = document.getElementById('price');
-        const price = parseFloat(pair.priceUsd);
-        const pc = pair.priceChange && parseFloat(pair.priceChange.m5);
-        if (!isNaN(price)) {
-          const change = (!isNaN(pc)) ? ' (' + (pc >= 0 ? '+' : '') + pc.toFixed(2) + '%)' : '';
-          priceEl.textContent = '$' + fmt(price) + change;
-          setCls(priceEl, pc >= 0 ? 'up' : pc < 0 ? 'down' : 'neutral');
+        if (!launchTime && pair.pairCreatedAt) {
+          launchTime = pair.pairCreatedAt;
+          updateTime();
         }
       } catch (e) {
         console.error('fetchDex error', e);
       }
     }
 
-    async function fetchHolders() {
-      try {
-        const r = await fetch('https://rpc.ankr.com/solana', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jsonrpc: '2.0', id: 1,
-            method: 'getTokenAccountsByMint',
-            params: [
-              CA,
-              { programId: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' },
-              { encoding: 'base64', limit: 1000 }
-            ]
-          })
-        });
-        const d = await r.json();
-        if (d && d.result && d.result.value) {
-          document.getElementById('holders').textContent = d.result.value.length.toLocaleString();
-        }
-      } catch (e) {
-        console.error('holders fetch error', e);
-      }
-    }
-
     fetchDex();
-    fetchHolders();
     setInterval(fetchDex, 15000);
-    setInterval(fetchHolders, 60000);
+    setInterval(updateTime, 1000);
   </script>
 </body>
 </html>
